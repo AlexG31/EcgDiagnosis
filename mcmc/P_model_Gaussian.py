@@ -5,6 +5,7 @@ import os
 import sys
 import pymc
 import math
+import scipy.signal
 import matplotlib.pyplot as plt
 import scipy.signal as signal
 from pymc import DiscreteUniform, Exponential, deterministic, Poisson, Uniform
@@ -65,6 +66,10 @@ def GetBaselineMatrix(signal_length, fs):
     cos_list = [math.cos(x / fs * math.pi * 2.0) for x in xrange(0, signal_length)]
     mat.append(sin_list)
     return np.array(mat)
+def GetGaussianPwave(signal_length, amp, sigma, dc):
+    '''Get Gausssian P wave shape.'''
+    data = scipy.signal.gaussian(signal_length, sigma) * amp + dc
+    return data
 
 def MakeModel(sig_in, p_wave_length, fs = 250.0):
     '''Create P wave delineation model for MCMC.'''
@@ -78,64 +83,38 @@ def MakeModel(sig_in, p_wave_length, fs = 250.0):
         raw_sig -= min_val
         raw_sig /= float(max_val - min_val)
 
-    # plt.plot(raw_sig)
-    # plt.title('Input ECG')
-    # plt.show()
-
-
-        
-
-    # plt.plot(raw_sig)
-    # plt.plot(HermitFunction(5, len(raw_sig)))
-    # plt.show()
-
     # Length of the ECG segment 
     len_sig = raw_sig.size
 
-    # wave_center = DiscreteUniform('wave_center', lower=0, upper=len_sig, doc='WaveCetner[index]')
-
-    hc0 = pymc.Normal('hc0', 1, 0.25)
-    hc1 = pymc.Normal('hc1', 1, 0.25)
-    hc2 = pymc.Normal('hc2', 1, 0.25)
-    hc3 = pymc.Normal('hc3', 1, 0.25)
-    hc4 = pymc.Normal('hc4', 1, 0.25)
-    hc5 = pymc.Normal('hc5', 1, 0.25)
-
-
+    # Baseline coefficients
     baseline_coefs = list()
     for ind in xrange(0, 5):
         baseline_coefs.append(pymc.Normal('bs%d' % ind, 0, 1.0))
+
+    P_dc = pymc.Normal('P_dc', 0, 1.0)
+    P_sigma = pymc.Normal('P_sigma', 7.0 * fs / 250.0, 0.2)
     # P_pos = pymc.Normal('P_pos', len_sig - 35, 1.0)
     P_pos = DiscreteUniform('P_pos', lower=45, upper=len_sig - 30, doc='WaveCetner[index]')
-    P_amp = pymc.Normal('P_amp', 0, 0.25)
+    P_amp = pymc.Normal('P_amp', 1.0, 0.25)
 
 
     @deterministic(plot=False)
-    def wave_shell(hc0=hc0,
-            hc1=hc1,
-            hc2=hc2,
-            hc3=hc3,
-            hc4=hc4,
-            hc5=hc5,
+    def wave_shell(
             bs_list = baseline_coefs,
+            sigma = P_sigma,
+            dc = P_dc,
             pos = P_pos,
             amp = P_amp,
             ):
         ''' Concatenate wave.'''
 
-        p_shape_coefs = [hc0, hc1, hc2, hc3, hc4, hc5,]
-        baseline_kx = bs_list
-
         out = np.zeros(len_sig,)
         # add baseline
         baseline_mat = GetBaselineMatrix(len_sig, fs)
-        for baseline_list, kx in zip(baseline_mat, baseline_kx):
+        for baseline_list, kx in zip(baseline_mat, bs_list):
             out += baseline_list * kx
 
-        # p_wave_length = 50.0 * fs / 250.0
-        p_wave_list = np.zeros(int(p_wave_length),)
-        for level, coef in zip(xrange(0,6), p_shape_coefs):
-            p_wave_list += HermitFunction(level, p_wave_length) * coef * amp
+        p_wave_list = GetGaussianPwave(p_wave_length, amp, sigma, dc)
         for p_ind, p_val in enumerate(p_wave_list):
             sig_ind = p_ind - p_wave_length / 2.0 + pos
             sig_ind = int(sig_ind)
