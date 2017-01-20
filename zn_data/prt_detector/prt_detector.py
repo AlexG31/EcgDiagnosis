@@ -80,8 +80,8 @@ class PrtDetector(object):
         result_dict['T_info'] = list()
         result_dict['P_info'] = list()
 
-        for ind in xrange(0, len(qrs_pos_list) - 1):
-        # for ind in xrange(0, 2):
+        # for ind in xrange(0, len(qrs_pos_list) - 1):
+        for ind in xrange(0, 4):
             qrs_pos_current = qrs_pos_list[ind]
             qrs_pos_next = qrs_pos_list[ind + 1]
 
@@ -154,7 +154,24 @@ def plot(raw_sig, fs, results):
     plt.show()
 
 
-if __name__ == '__main__':
+def TEST_SAMPLE():
+    prt_detector = PrtDetector()
+    fs = 500.0
+    sig_data = sio.loadmat('./sample1.mat')
+    for key in sig_data.keys():
+        sig_data[key] = np.squeeze(sig_data[key])
+
+    for leadname in ['I', 'II', 'III', 'aVR', 'aVF', 'aVL',
+            'V1', 'V2', 'V3', 'V4','V5', 'V6']:
+        # test_on_zn(sig_data, record_ID, leadname, fs)
+        raw_sig = sig_data['II'][:]
+        # plt.plot(raw_sig)
+        # plt.show()
+        results = prt_detector.detect(raw_sig, fs)
+        plot(raw_sig, fs, results)
+        break
+
+def TEST_ZN():
     with codecs.open('./diagnosis_info.json', 'r', 'utf8') as fin:
         dinfo = json.load(fin)
 
@@ -191,3 +208,6 @@ if __name__ == '__main__':
                 results = prt_detector.detect(raw_sig, fs)
                 plot(raw_sig, fs, results)
                 break
+if __name__ == '__main__':
+    TEST_SAMPLE()
+    # TEST_ZN()
