@@ -76,6 +76,7 @@ def GetBaselineMatrix(signal_length, fs):
     cos_list = [math.cos(x / fs * math.pi * 2.0) for x in xrange(0, signal_length)]
     mat.append(sin_list)
     return np.array(mat)
+
 def GetGaussianPwave(signal_length, amp, sigma, dc):
     '''Get Gausssian P wave shape.'''
     data = scipy.signal.gaussian(signal_length, sigma) * amp + dc

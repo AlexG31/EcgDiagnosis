@@ -136,7 +136,7 @@ def TestGaussian():
 
     from QTdata.loadQTdata import QTloader
     qt = QTloader()
-    sig = qt.load('sel100')
+    sig = qt.load('sel34')
     # raw_sig = sig['sig2'][0:10000]
     raw_sig = sig['sig2'][10000:20000]
 
@@ -165,6 +165,7 @@ def TestGaussian():
         # show full signal
         bound_list = [r_list[ind],r_list[ind + 1]]
         plt.figure(2)
+        plt.clf()
         plt.plot(raw_sig)
         plt.plot(bound_list, [raw_sig[x] for x in bound_list], 'ro')
         plt.xlim((bound_list[0] - 40, bound_list[1] + 40))

@@ -151,7 +151,12 @@ def MakeModel(sig1, fs, max_displacement = 10, ignore_edge_length = 10):
             # doc = 'CommonLength')
     
     hermit_coefs = list()
-    for ind in xrange(0, HermitFunction_max_level):
+    # Dc baseline
+    # coef = pymc.Normal('hc0', mu = 0, tau = 0.003)
+    coef = DiscreteUniform('hc0', lower=-300,
+            upper= 0, doc='hc0')
+    hermit_coefs.append(coef)
+    for ind in xrange(1, HermitFunction_max_level):
         coef = pymc.Normal('hc%d' % ind, mu = 0, tau = 0.003)
         hermit_coefs.append(coef)
 

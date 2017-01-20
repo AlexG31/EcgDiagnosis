@@ -48,17 +48,21 @@ class TDelineator(object):
         if (qrs_pos_current[2] + SJ_length < len(filtered_sig)):
             segment_range[0] = qrs_pos_current[2] + SJ_length
 
-        raw_sig = filtered_sig[segment_range[0]: segment_range[1]][0::step]
+        raw_sig = filtered_sig[segment_range[0]: segment_range[1]]
         if len(raw_sig) == 0:
             return None
-        remain_range = remove_edge_QRS(raw_sig)
+
+        # Remove QRS segments
+        remain_range = list(remove_edge_QRS(raw_sig))
         global_bias = segment_range[0] + remain_range[0]
 
+        remain_range[1] = int(remain_range[0] + (remain_range[1] - remain_range[0]) * 12 / 20.0)
         # Skip short signals
         if remain_range[1] - remain_range[0] <= 20:
+            print 'Warning: Skipping short T wave segment!'
             return None
 
-        raw_sig = raw_sig[remain_range[0]:remain_range[1]]
+        raw_sig = raw_sig[remain_range[0]:remain_range[1]][::step]
 
         # HPF ECG segment
         raw_sig = self.r_detector.HPF(raw_sig, fs = fs, fc = 2.0)
@@ -85,7 +89,7 @@ class TDelineator(object):
                 Return None on short segments.
         '''
         raw_sig, global_bias = self.process_segment(filtered_sig, fs,
-                qrs_pos_current, qrs_pos_next)
+                qrs_pos_current, qrs_pos_next, step = step)
         if raw_sig is None:
             return None
 
@@ -116,6 +120,7 @@ class TDelineator(object):
         results['global_bias'] = global_bias
         results['amplitude'] = gamp
         results['step'] = step
+        results['segment_range'] = (global_bias, global_bias + len(raw_sig) * step)
 
         return results
 
@@ -124,7 +129,7 @@ class TDelineator(object):
             ignore_edge_length = 5,
             iter_count = 500,
             burn_count = 250):
-        '''Compare and Return the similarity score.'''
+        '''Deprecated. Compare and Return the similarity score.'''
 
         sig1 = self.sig1
         rr_model = t_gaussian_model.MakeModel(self.sig1,

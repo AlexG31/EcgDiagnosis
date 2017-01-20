@@ -19,6 +19,7 @@ def inspect(qt, rec_ind):
     plt.legend()
     plt.title('ECG[%d] %s' % (rec_ind, reclist[rec_ind]))
     plt.xlim((0,1000))
+    plt.grid(True)
     plt.show()
 
 
