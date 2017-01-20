@@ -98,7 +98,7 @@ class PrtDetector(object):
             # P detection
             p_result = p_detector.detect(filtered_sig, fs, qrs_pos_current,
                     qrs_pos_next,
-                    step = 1,
+                    step = 4,
                     iter_count = 2000,
                     burn_count = 1000,
                     )
@@ -148,6 +148,7 @@ def plot(raw_sig, fs, results):
                 # label = 'P segment')
             
 
+    # plt.xlim((results['Ronset'][0], results['Roffset'][4]))
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -189,3 +190,4 @@ if __name__ == '__main__':
                 raw_sig = sig_data['II'][:]
                 results = prt_detector.detect(raw_sig, fs)
                 plot(raw_sig, fs, results)
+                break

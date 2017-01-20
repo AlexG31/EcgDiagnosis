@@ -71,21 +71,25 @@ class PDelineator(object):
         # region_right = r_list[ind + 1]
         region_left = qrs_pos_current[2]
         region_right = qrs_pos_next[0]
-        # QR_length = fs / 46.0
-        # PR_length = 0.5 * (region_right - region_left)
         PQ_length = 0.5 * (region_right - region_left)
 
         # segment_range = [int(region_right - PR_length), int(region_right - QR_length)]
         segment_range = [int(region_right - PQ_length), int(region_right)]
+        # remove s wave
+        segment_range[1] -= int(10 * fs / 500.0)
         if segment_range[1] - segment_range[0] <= 0:
             return None
 
         sig_seg = raw_sig[segment_range[0]:segment_range[1]][::step]
-        sig_seg = r_detector.HPF(sig_seg, fs = fs, fc = 3.0)
-        if len(sig_seg) <= 75:
-            print 'R-R interval %d is too short!' % len(sig_seg)
-            return None
+        sig_seg = r_detector.HPF(sig_seg, fs = fs / step, fc = 3.0)
+        # if len(sig_seg) <= 75:
+            # print 'R-R interval %d is too short!' % len(sig_seg)
+            # return None
 
+        # debug
+        # plt.plot(sig_seg)
+        # plt.grid(True)
+        # plt.show()
 
         p_model = P_model_Gaussian.MakeModel(sig_seg, p_wave_length, fs = fs / step)
         M = MCMC(p_model)

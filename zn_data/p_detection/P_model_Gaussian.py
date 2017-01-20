@@ -125,15 +125,9 @@ def MakeModel(sig_in, p_wave_length, fs = 250.0):
     # Load ECG segment array
     raw_sig = sig_in
     raw_sig = np.array(raw_sig, dtype = np.float32)
-    len_sig = raw_sig.size
-    # Normalize
-    # min_val = np.min(raw_sig)
-    # max_val = np.max(raw_sig)
-    # if max_val - min_val > 1e-6:
-        # raw_sig -= min_val
-        # raw_sig /= float(max_val - min_val)
-
     # Length of the ECG segment 
+    len_sig = raw_sig.size
+
 
     hermit_coefs = list()
     # Dc baseline
@@ -147,14 +141,14 @@ def MakeModel(sig_in, p_wave_length, fs = 250.0):
 
     # upper_limit = min(50 * fs / 250.0, len_sig - 1)
     # lower_limit = 15 * fs / 250.0
-    upper_limit = int(60 / 250.0 * fs)
+    upper_limit = int(100 / 500.0 * fs)
     upper_limit = min(len_sig - 1, upper_limit)
-    lower_limit = int(30 / 250.0 * fs)
+    lower_limit = int(40 / 500.0 * fs)
     if lower_limit >= upper_limit:
         lower_limit = 1
-    print 'lower:', lower_limit
-    print 'upper:', upper_limit
-    print 'len_sig:', len_sig
+    # print 'lower:', lower_limit
+    # print 'upper:', upper_limit
+    # print 'len_sig:', len_sig
 
     gaussian_sigma = DiscreteUniform('gaussian_sigma',
             lower = lower_limit,
@@ -177,14 +171,18 @@ def MakeModel(sig_in, p_wave_length, fs = 250.0):
 
     @pymc.stochastic(dtype=int)
     def gaussian_start_position(
-            value = 0,
+            value = int(40 * fs / 500.0),
             gs = gaussian_sigma,
             ):
         ''' Start position of Gassian wave.'''
-        left = 0
-        right = len_sig - 1
+        left = int(40 * fs / 500.0)
         # right = len_sig - 1
-        # left = len_sig - 0.65 * gs
+        # right = len_sig - 1
+        right = int(len_sig - 0.25 * gs)
+        # print 'gs = ', gs
+        # print 'right = ', right
+        # print 'left = ', left
+
         # right = len_sig - gs
         # left = max(0, int(len(sig_in) * 2.0 / 3.0))
         if value < left or value > right:
@@ -192,14 +190,22 @@ def MakeModel(sig_in, p_wave_length, fs = 250.0):
             return -np.inf
         else:
             # gaussian log-prior
-            center_index = int((left + right) * 3.0 / 4.0)
+            center_index = int((left + right) * 0.9)
             # center_index = int(right - 1)
             d = int(max(center_index - left, right - center_index))
-            M = 2 * d + 3
-            pos_gaussian = scipy.signal.gaussian(M, 3)
+            M = 2 * d + 1
+            pos_gaussian = scipy.signal.gaussian(M, 10 * fs / 500.0)
             pos_gaussian = pos_gaussian[M / 2 - center_index + int(left):M / 2 - center_index + int(right) + 1]
             p_sum = np.sum(pos_gaussian)
             pos_gaussian /= p_sum
+
+            # debug
+            # plt.figure(1)
+            # plt.clf()
+            # plt.plot(xrange(left, right + 1), pos_gaussian)
+            # plt.grid(True)
+            # plt.title('ECG')
+            # plt.show()
 
             return np.log(pos_gaussian[int(value) - int(left)])
 

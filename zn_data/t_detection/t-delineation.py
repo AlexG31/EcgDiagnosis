@@ -65,7 +65,7 @@ class TDelineator(object):
         raw_sig = raw_sig[remain_range[0]:remain_range[1]][::step]
 
         # HPF ECG segment
-        raw_sig = self.r_detector.HPF(raw_sig, fs = fs, fc = 2.0)
+        raw_sig = self.r_detector.HPF(raw_sig, fs = fs / step, fc = 2.0)
 
         # Convert to np array
         raw_sig = np.array(raw_sig, dtype = np.float32)
